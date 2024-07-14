@@ -58,3 +58,25 @@
 ## Configurando Docker
 
 - Configurar Docker Compose para Banco de Dados
+  - Em produção é recomendado as imagens da Bitnami, que adicionam uma camada a mais de segurança: `bitnami/postgres`
+  - Em desenvolvimento podemos usar a oficial mesmo: `postgres`
+  ```yaml
+  version: '3'
+
+  services:
+    postgres:
+      container_name: nest-clean-pg
+      image: postgres
+      ports:
+        - 5440:5432
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: docker
+        POSTGRES_DB: nest-clean
+        PGDATA: /data/postgres
+      volumes:
+        - ./data/pg:/data/postgres
+  ```
+- Executar o docker `docker compose up -d`
+- Utilizar alguma ferramenta para acessar o postgres, como Postico ou PgADMIN
+
