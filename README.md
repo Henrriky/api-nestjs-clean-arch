@@ -80,3 +80,23 @@
 - Executar o docker `docker compose up -d`
 - Utilizar alguma ferramenta para acessar o postgres, como Postico ou PgADMIN
 
+## Configurando prisma
+
+- Instalar a CLI do Prisma como desenvolvimento `pnpm install prisma -D`
+  - Executar comandos como `prisma init`
+- Instalar o Client do Prisma como produção: `pnpm install @prisma/client`
+- Executar `prisma init` e seguir os passos recomendados:
+  1. Set the DATABASE_URL in the .env file to point to your existing database. If your database has no tables yet, read https://pris.ly/d/getting-started
+  2. Set the provider of the datasource block in schema.prisma to match your database: postgresql, mysql, sqlite, sqlserver, mongodb or cockroachdb.
+  3. Run `prisma migrate dev` to turn your prisma schema into your database or use `prisma db pull` to inverse.
+  4. Run `prisma generate` to generate the Prisma Client. You can then start querying your database.
+- Agora vamos configurar nosso schema
+- Executar `prisma migrate dev` para enviar as alterações para o banco de dados
+- Executar `prisma studio` para visualizar o banco de dados
+
+### Configurando o serviço do Prisma para o NestJS
+
+- Num projeto comum, nós iriamos criar um arquivo `prisma.ts` e exportar o prisma client, no entanto, como estamos trabalhando com NestJS, vamos aproveitar a funcionalidade que ele tem de inversão de dependência
+- Criar arquivo `src/prisma/prisma.service.ts` com `@Injectable()`
+  - Utilizar contratos do NestJS `OnModuleInit` e `OnModuleDestroy`, que permite ao NestJS chamar os dois métodos definidos no service quando o modulo que usa o prisma service for destruido ou iniciado.
+- Importar o Service no `AppModule` em `providers`. Depois disso, todos os métodos dentro de PrismaService será acessível para os controladores que injetarem o Serviço do Prisma como dependência
