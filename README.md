@@ -1,6 +1,7 @@
 # Projeto com NestJS
 
 - Quick AI: MacOS Extension
+- Modelo C4 (Context, Containers, Components, Code Diagram)
 
 ## Criando projeto com NestJS
 
@@ -214,3 +215,87 @@ export class ZodValidationPipe implements PipeTransform {
 ```
 - Agora vamos importar nosso `ZodValidationPipe` no `CreateAccountController` através do decorator `UsePipes(new ZodValidationPipe(createAccountBodySchema))` no nosso handler
 - Instalar `pnpm install zod-validation-error`, que deixa os erros do zod mais legiveis usando `fromZodError`
+
+## Usando ConfigModule para as variáveis de ambiente
+
+- Para fazer essa validação com as variáveis de ambiente no NestJS vamos usar o conceito de `ConfigModule`:
+  - Baixar: `pnpm i @nestjs/config`
+  - Criar env.ts
+  ```ts
+  export const envSchema = z.object({
+    DATABASE_URL: z.string().url(),
+    PORT: z.coerce.number().optional().default(3333),
+  })
+
+  export type env = z.infer<typeof envSchema>
+
+  //app.module.ts
+  @Module({
+    imports: [
+      ConfigModule.forRoot({
+        validate: (env) => envSchema.parse(env),
+        isGlobal: true,
+      }),
+    ],
+    controllers: [CreateAccountController],
+    providers: [AppService, PrismaService],
+  })
+  export class AppModule {}
+
+  ```
+  - Agora importar o ConfigModule dentro do AppModule, passando o schema de validação e dizendo que ele será um módulo global, para que os outros modulos não tenham que importar ele explicitamente. Teremos acesso das variaveis de ambiente utilizando um `ConfigService` com inversão de dependencia no contrutor dos serviços ou controllers
+
+## Configurando Autenticação JWT
+
+- Criar módulo de autenticação: `auth.module.ts` e importar ele no módulo principal
+- `npm i @nestjs/passport @nestjs/jwt` 
+  - PassportJS: Biblioteca para autenticação usado no Express, Fastify, NestJS entre outros. A ideia principal dele é automatizar fluxos de autenticação, como OAuth 2.0, OpenID, SAML, OAuth 2.0 Multitenant entre outros protocolos, abstraindo complexidades que apenas se repetem com a implementação desses protocolos. No nosso caso vamos utilizar a estratégia "Passport-jwt"
+- Vamos configurar no `AuthModule` a importação de mais dois outros módulos `PassportModule` e `JwtModule`.
+  - Será necessário registrar o JwtModule passando algumas variáveis, como o Secret. No entanto, atualmente só sabemos que é possível utilizar o ConfigService.get como uma provider injetavel. Para utilizar Services na configuração de um módulo, é preciso utilizar `registerAsync` no `JwtModule` passando uma lista de serviços para o atributo `inject`, que vai permitir a injeção de Serviços enquanto o JwtModule está sendo registrado.
+  - Além disso, vamos passar o tipo de algoritmo do JWT, que será o RS256. Esse algoritmo permite a utilização de chaves publicas para que outros microserviços possam validar um token do usuário.
+
+### Gerando token JWT
+
+- Para gerar um token JWT precisaremos primeiro gerar nossa chave privada e publica
+  - `openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048`
+  - `openssl rsa -pubout -in private_key.pem -out public_key.pem`
+- Após gerar as chaves vamos carregar elas no .env e definir a validação em env.ts. Além disso, vamos criar um `AuthenticateController` que vai utilizar o `JwtService` que vem do `JwtModule` que está sendo importado no `AuthModule`, que consequentemente é importado pelo `AppModule`
+
+```ts
+//AuthModule -> (PassportModule, JwtModule)
+@Module({
+  imports: [
+    PassportModule,
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      global: true,
+      useFactory(config: ConfigService<env, true>) {
+        const privateKey = config.get('JWT_PRIVATE_KEY')
+        const publicKey = config.get('JWT_PRIVATE_KEY')
+
+        return {
+          signOptions: { algorithm: 'RS256' },
+          privateKey: Buffer.from(privateKey, 'base64'),
+          publicKey: Buffer.from(publicKey, 'base64'),
+        }
+      },
+    }),
+  ],
+})
+export class AuthModule {}
+
+//AppModule -> (AuthModule  (PassportModule, JwtModule), ConfigModule)
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      validate: (env) => envSchema.parse(env),
+      isGlobal: true,
+    }),
+    AuthModule,
+  ],
+  controllers: [CreateAccountController, AuthenticateController],
+  providers: [AppService, PrismaService],
+})
+export class AppModule {}
+```
+- Quando importamos um modulo dentro de outro modulo, todos os modulos importados pelo modulo importado são levados juntos, tal como os providers e controllers.
