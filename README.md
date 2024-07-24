@@ -422,7 +422,34 @@ describe('Create Account (E2E)', () => {
     expect(userOnDatabase).toBeTruthy()
   })
 })
-
-
-
 ```
+
+## Entendendo camadas
+
+- 1. Camada azul (mais externa): Também chamada de `infra`
+  - Interage com o mundo externo (usuário, banco de dados)
+  - Devices: Android
+  - External Interfaces: API's de envio de email
+  - Web: API Rest, HTTP
+  - UI: Front-end
+  - DB: Prisma
+- 2. Camada verde: Também conhecida de `gateways`, `presenters`, `controllers`
+  - Adaptam as requisições/comunicação que acontece entre o mundo externo e as camadas mais internas
+  - Controllers: Recebem as requisições HTTP
+  - Presenters: Adaptam as respostas para a camada mais externa
+  - Gateways: Adaptam as camadas mais externas para que as camadas mais internas possam conversar com eles sem depender da implementação
+- 3. Camada vermelha e amarela: Também conhecida de `domain`, `business`, `enterprise`
+  - Aqui fica todo o código desacoplado de qualquer framework, que expressa a linguagem e os modelos do negócio, respeitando suas fronteiras e relacionamentos, tal como os objetos de valor.
+  - Toda comunicação dessa camada com uma exterior deve ser feita através de `Adapters ou Gateways`
+  - Use cases
+  - Entities
+  - Value Objects
+- Exemplo:
+  HTTP (INFRA)
+    --> CONTROLLERS (ADAPTERS, GATEWAYS)
+      --> USE CASE (DOMAIN)
+        --> ENTITIES
+        --> Repositories (Gateways)
+          --> Prisma (Infra)
+            --> Presenter (Adapter, Gateway)
+              --> HTTP Response
