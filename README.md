@@ -135,7 +135,7 @@
     HttpCode,
     Post,
   } from '@nestjs/common'
-  import { PrismaService } from 'src/prisma/prisma.service'
+  import { PrismaService } from '@/prisma/prisma.service'
 
   @Controller('/accounts')
   export class CreateAccountController {
@@ -299,3 +299,130 @@ export class AuthModule {}
 export class AppModule {}
 ```
 - Quando importamos um modulo dentro de outro modulo, todos os modulos importados pelo modulo importado são levados juntos, tal como os providers e controllers.
+
+### Protegendo rotas com Guards
+
+- Os Guards nos NestJS são utilizados para mapear rotas que deverão ser protegidas com autorização via JWT ou qualquer outro tipo de Guard.
+- Para isso, vamos configurar primeiramente nossa Strategy (que serve para validar que o usuário está logado e não para criar):
+```ts
+const tokenSchema = z.object({
+  sub: z.string().uuid(),
+})
+
+type TokenSchema = z.infer<typeof tokenSchema>
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(config: ConfigService<env, true>) {
+    const publicKey = config.get('JWT_PUBLIC_KEY', { infer: true })
+
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: Buffer.from(publicKey, 'base64'),
+      algorithms: ['RS256'],
+    })
+  }
+
+  async validate(payload: TokenSchema) {
+    return tokenSchema.parse(payload)
+  }
+}
+```
+- Cadastrar o `JwtStrategy` no `AuthModule` em `providers`
+- Usar o `@UseGuards(AuthGuard('jwt'))` no controller
+
+
+## Configurando Vitest + SWC
+
+- Padrão: feita com o typescript (tsc)
+- SWC: Plataforma para compilação de código typescript para javascript mais rápdi
+  - SWC (Fast compiler) da documentação do NestJS
+  - `pnpm install vite-tsconfig-paths -D`: Utilizar alias para importação absoluta a partir da raiz
+  - Criar `vitest.config.e2e.ts` e `vitest.config.ts`
+
+## Banco de dados isolado nos testes
+
+- Nos testes E2E não devemos mockar o banco de dados, o ideal é ser o mais próximo possível do ambiente de produção.
+- É sempre importante realizar o fluxo completo da nossa aplicação, devemos ter um banco de dados isolado para cada teste E2E que for rodar, para que não ocorra conflitos na hora que outro teste estiver rodando.
+- Cada teste tera um banco de dados zerado.
+  - Criar arquiv `setup-e2e.ts`, que será chamado antes de cada teste
+  - Adicionar o arquivo em `setupFiles` no `vitest.config.e2e.ts`
+  ```ts
+  import { PrismaClient } from '@prisma/client'
+  import { execSync } from 'child_process'
+  import { randomUUID } from 'crypto'
+  import 'dotenv'
+
+  const prisma = new PrismaClient()
+
+  function generateUniqueDatabaseUrl(schemaId: string) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('Please provide a DATABASE_URL enviroment variable.')
+    }
+
+    const url = new URL(process.env.DATABASE_URL)
+
+    url.searchParams.set('schema', schemaId)
+
+    return url.toString()
+  }
+
+  beforeAll(async () => {
+    const databaseURL = generateUniqueDatabaseUrl(randomUUID())
+
+    process.env.DATABASE_URL = databaseURL
+
+    execSync('pnpm prisma migrate deploy')
+  })
+
+  afterAll(async () => {})
+  ```
+- Após isso, quando os testes forem rodar cada um deles terá uma URL do banco de dados diferente. Se usarmos alguma ferramenta de gerenciamento de banco de dados vamos poder visualizar de que o banco de dados da aplicação possui o schema dos testes.
+
+## Testes E2E de usuários
+
+- `pnpm i supertest @types/supertest -D`
+```ts
+import { AppModule } from '@/app.module'
+import { PrismaService } from '@/prisma/prisma.service'
+import { INestApplication } from '@nestjs/common'
+import { Test } from '@nestjs/testing'
+import request from 'supertest'
+
+describe('Create Account (E2E)', () => {
+  let app: INestApplication
+  let prisma: PrismaService
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile()
+
+    app = moduleRef.createNestApplication()
+    prisma = moduleRef.get(PrismaService)
+
+    await app.init()
+  })
+
+  test('[POST] /accounts', async () => {
+    const response = await request(app.getHttpServer()).post('/accounts').send({
+      name: 'John Doe',
+      email: 'johndoe@example.com',
+      password: '123456',
+    })
+
+    expect(response.statusCode).toBe(201)
+
+    const userOnDatabase = await prisma.user.findUnique({
+      where: {
+        email: 'johndoe@example.com',
+      },
+    })
+
+    expect(userOnDatabase).toBeTruthy()
+  })
+})
+
+
+
+```
