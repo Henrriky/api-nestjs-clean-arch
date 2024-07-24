@@ -453,3 +453,16 @@ describe('Create Account (E2E)', () => {
           --> Prisma (Infra)
             --> Presenter (Adapter, Gateway)
               --> HTTP Response
+
+## Criando camada de infra
+
+- src/domain: Domínio do negócio
+- src/core: Entidades e Objetos compartilhados no domínio do negócio, poderia se chamar shared
+- src/infra: Camada do NestJS
+  - Framework (NestJS), Banco de Dados, Infra
+  - http
+    - controllers
+    - pipes
+  - auth
+  - prisma
+  - auth, controllers, pipes, prisma, env, nestjs
