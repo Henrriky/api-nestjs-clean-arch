@@ -466,3 +466,10 @@ describe('Create Account (E2E)', () => {
   - auth
   - prisma
   - auth, controllers, pipes, prisma, env, nestjs
+
+### Criando repositories
+
+- Para criar repositories vamos primeiro criar um modulo de banco de dados `database.module.ts`
+- Esse modulo vai utilizar o PrismaService, então devemos importar ele através de `providers: [PrismaService]`;
+- Se quisermos que outros modulos que importarem o nosso sejam capazes de acessar o `PrismaService` será necessário utilizar `exports: [PrismaService]`
+- Agora basta implementar a interface dos casos de uso que funcionam como Gateways para camadas externas como o nosso banco de dados utilizando o PrismaORM
