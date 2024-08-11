@@ -473,3 +473,101 @@ describe('Create Account (E2E)', () => {
 - Esse modulo vai utilizar o PrismaService, então devemos importar ele através de `providers: [PrismaService]`;
 - Se quisermos que outros modulos que importarem o nosso sejam capazes de acessar o `PrismaService` será necessário utilizar `exports: [PrismaService]`
 - Agora basta implementar a interface dos casos de uso que funcionam como Gateways para camadas externas como o nosso banco de dados utilizando o PrismaORM
+
+### Conversa entre camadas (mapppers)
+
+- Existem dois tipos de questions, as do banco de dados e a do domínio. É extremamente comum a gente ter representações diferentes de uma mesma entidade em diferentes camadas.
+```ts
+export class PrismaQuestionMapper {
+  static toDomain(raw: PrismaQuestion): Question {
+    return Question.create(
+      {
+        title: raw.title,
+        content: raw.content,
+        authorId: new UniqueEntityID(raw.authorId),
+        bestAnswerId: raw.bestAnswerId
+          ? new UniqueEntityID(raw.bestAnswerId)
+          : null,
+        slug: Slug.create(raw.slug),
+        createdAt: raw.createdAt,
+        updatedAt: raw.updatedAt,
+      },
+      new UniqueEntityID(raw.id),
+    )
+  }
+
+  static toPrisma(question: Question): Prisma.QuestionUncheckedCreateInput {
+    return {
+      id: question.id.toString(),
+      authorId: question.authorId.toString(),
+      bestAnswerId: question.bestAnswerId?.toString(),
+      title: question.title,
+      slug: question.slug.value,
+      content: question.content,
+      createdAt: question.createdAt,
+      updatedAt: question.updatedAt,
+    }
+  }
+}
+```
+
+### Criando schema do Prisma
+
+```prisma
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+}
+
+model User {
+  id        String     @id @default(uuid())
+  name      String
+  email     String     @unique
+  password  String
+  role      UserRole   @default(STUDENT)
+  questions Question[]
+
+  @@map("users")
+}
+
+model Answer {
+  id        String    @id @default(uuid())
+  content   String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  authorId  String    @map("author_id")
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@map("answers")
+}
+```
+- `pnpm prisma migrate dev`
+
+### Comunicação entre camadas
+
+- Para utilizar o `CreateQuestionUseCase` no `CreateQuestionController` é necessário:
+  1. Receber `CreateQuestionUseCase` no construtor de `CreateQuestionController`
+  2. Alternativas para injetar `CreateQuestionUseCase` no `CreateQuestionController`
+    - Alternativa que vai ferir a Clean Architecture: Usar `@Injectable()` em uma camada de domínio, que deve ser livre de frameworks.
+    - Alternativa sem sujar a camada de domínio:
+      - Criar um `nest-create-question-use-case.ts` e criar uma classe que extende `CreateQuestionUseCase` que usa o `Injectable()`
+  3. Agora basta adicionar `CreateQuestionUseCase` que virou um service como um provider de `HttpModule` para que `CreateQuestionController` tenha acesso
+  4. Resolver problema de que o NestJS não consegue entender uma interface como Injeção de dependência
+    - No NestJS a injeção de dependência acontece na execução da aplicação que está em JS.
+    - Alterar de interfaces para classes abstratas e transformar os métodos para abstratos
+    - No DatabaseModule utilize provide e useClass nos providers
+    ```ts
+    providers: [
+      {
+        provide: QuestionsRepository,
+        useClass: PrismaQuestionsRepository,
+      },
+    ],
+    ```
+
+### Presenters
+
+- Os presenters na Clean Arch são componentes da aplicação que possuem a responsabilidade de converter o que temos da camada de domínio para a camada HTTP.
+  - No cenário atual estamos trabalhando apenas com o protocolo HTTP, mas caso a gente fosse trabalhar com outros deveriamos colocar um prefixo em cada presenter
+  - Nós poderiamos definir alguns presenters na onde omitiria algum atributo para diminuir o payload carregado pela rede.
