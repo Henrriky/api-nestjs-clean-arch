@@ -571,3 +571,46 @@ model Answer {
 - Os presenters na Clean Arch são componentes da aplicação que possuem a responsabilidade de converter o que temos da camada de domínio para a camada HTTP.
   - No cenário atual estamos trabalhando apenas com o protocolo HTTP, mas caso a gente fosse trabalhar com outros deveriamos colocar um prefixo em cada presenter
   - Nós poderiamos definir alguns presenters na onde omitiria algum atributo para diminuir o payload carregado pela rede.
+
+## Caso de uso: Autenticar e Registrar Estudante
+
+### Gateways de Criptografia
+
+- Criação de conta utiliza um `Serviço de Criptografia` para criar o hash
+- Realização do login utiliza um `Serviço de Criptografia` para comparar a senha enviada com o hash
+- O ideal é abstrair esse `Serviço de Criptografia` para um `Contract/Port/Adapter`, onde cada biblioteca terá sua implementação especifica.
+- O `Serviço de Criptografia` pertence a camada de infraestrutura. No nosso caso já temos algo parecido, com o `Repository` atuando como um Adapter entre o caso de uso e o banco de dados (Gateway, Proxy, Adapter ou outros nomes)
+```ts
+export abstract class Encrypter {
+  abstract encrypt(payload: Record<string, unknown>): Promise<string>
+}
+export abstract class HashComparer {
+  abstract compare(plain: string, hash: string): Promise<boolean>
+}
+export abstract class HashGenerator {
+  abstract hash(plain: string): Promise<string>
+}
+```
+
+#### Stubs de criptografia
+
+- Criação de algo irreal feito apenas para os testes
+```ts
+export class FakeHasher implements HashGenerator, HashComparer {
+  async hash(plain: string): Promise<string> {
+    return plain.concat('-hashed')
+  }
+
+  async compare(plain: string, hash: string): Promise<boolean> {
+    return plain.concat('-hashed') === hash
+  }
+}
+export class FakeEncrypter implements Encrypter {
+  async encrypt(payload: Record<string, unknown>): Promise<string> {
+    return JSON.stringify(payload)
+  }
+}
+```
+
+#### Implementação de criptografia
+
