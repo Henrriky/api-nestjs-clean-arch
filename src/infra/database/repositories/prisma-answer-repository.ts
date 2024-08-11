@@ -4,7 +4,7 @@ import { Answer } from '@/domain/forum/enterprise/entities/Answer'
 import { Injectable } from '@nestjs/common'
 
 @Injectable()
-class PrismaAnswerRepository implements AnswersRepository {
+export class PrismaAnswerRepository implements AnswersRepository {
   findById(id: string): Promise<Answer | null> {
     throw new Error('Method not implemented.')
   }
