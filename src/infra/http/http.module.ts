@@ -6,15 +6,23 @@ import { CreateQuestionController } from './controllers/create-question.controll
 import { DatabaseModule } from '../database/database.module'
 import { CreateQuestionUseCase } from '@/domain/forum/application/use-cases/create-question'
 import { FetchRecentQuestionsUseCase } from '@/domain/forum/application/use-cases/fetch-recent-questions'
+import { AuthenticateStudentUseCase } from '@/domain/forum/application/use-cases/authenticate-student'
+import { CryptographyModule } from '../cryptography/cryptography.module'
+import { RegisterStudentUseCase } from '@/domain/forum/application/use-cases/register-student'
 
 @Module({
-  imports: [DatabaseModule], // IMPORTS PERMITE ACESSO DE TODOS OS SERVICES EXPORTADOS PELO MODULO SEM PRECISAR ESPECIFICAR NO PROVIDERS DO ATUAL.
+  imports: [DatabaseModule, CryptographyModule], // IMPORTS PERMITE ACESSO DE TODOS OS SERVICES EXPORTADOS PELO MODULO SEM PRECISAR ESPECIFICAR NO PROVIDERS DO ATUAL.
   controllers: [
     FetchRecentQuestionsController,
     CreateAccountController,
     AuthenticateController,
     CreateQuestionController,
   ],
-  providers: [CreateQuestionUseCase, FetchRecentQuestionsUseCase],
+  providers: [
+    CreateQuestionUseCase,
+    FetchRecentQuestionsUseCase,
+    AuthenticateStudentUseCase,
+    RegisterStudentUseCase,
+  ],
 })
 export class HttpModule {}
