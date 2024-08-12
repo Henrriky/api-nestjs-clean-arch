@@ -8,7 +8,7 @@ export class JwtEncrypter implements Encrypter {
 
   async encrypt(payload: Record<string, unknown>): Promise<string> {
     const accessToken = this.jwt.sign({
-      payload,
+      ...payload,
     })
 
     return accessToken
