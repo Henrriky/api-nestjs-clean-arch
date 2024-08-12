@@ -648,5 +648,19 @@ export class JwtEncrypter implements Encrypter {
 
 - Criar implementação de `StudentsRepository` e criação do mapper `PrismaStudentMapper`
 - Tratamento de erro correto:
-  
+```ts
+    if (result.isFailure()) {
+      const error = result.value
+      switch (error.constructor) {
+        case WrongCredentialsError:
+          throw new UnauthorizedException(error.message)
+        default:
+          throw new BadRequestException(error.message)
+      }
+    }
+```
 
+## Rotas privadas por padrão
+
+- Definir apenas as rotas que não precisam de autenticação
+- Usar a constante APP_GUARD, que é uma maneira de definir um Guard de maneira global

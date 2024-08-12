@@ -4,10 +4,8 @@ import {
   Controller,
   HttpCode,
   Post,
-  UseGuards,
 } from '@nestjs/common'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
-import { JwtAuthGuard } from '@/infra/auth/jwt-auth.guard'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { z } from 'zod'
 import { ZodValidationPipe } from '../pipes/zod-validation-pipe'
@@ -21,7 +19,6 @@ const createQuestionBodySchema = z.object({
 type CreateQuestionSchema = z.infer<typeof createQuestionBodySchema>
 
 @Controller('/questions')
-@UseGuards(JwtAuthGuard)
 export class CreateQuestionController {
   constructor(private createQuestion: CreateQuestionUseCase) {}
 
