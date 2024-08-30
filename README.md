@@ -705,3 +705,5 @@ model Attachment {
 - 414 -> Implementando Repositorios
 
 ## Implementando repositórios
+
+## Utilizando Factories nos Testes E2E
