@@ -707,3 +707,5 @@ model Attachment {
 ## Implementando repositórios
 
 ## Utilizando Factories nos Testes E2E
+
+## Refatorando E2E
