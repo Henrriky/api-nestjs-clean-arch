@@ -2,25 +2,61 @@ import { PaginationParams } from '@/core/repositories/paginations-params'
 import { QuestionCommentsRepository } from '@/domain/forum/application/repositories/question-comments-repository'
 import { QuestionComment } from '@/domain/forum/enterprise/entities/Question-Comment'
 import { Injectable } from '@nestjs/common'
+import { PrismaService } from '../prisma.service'
+import { PrismaQuestionCommentMapper } from '../mapper/prisma-question-comment-mapper'
 
 @Injectable()
-export class PrismaQuestionCommentsRepository implements QuestionCommentsRepository {
-  findById(id: string): Promise<QuestionComment | null> {
-    throw new Error('Method not implemented.')
+export class PrismaQuestionCommentsRepository
+  implements QuestionCommentsRepository
+{
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findById(id: string): Promise<QuestionComment | null> {
+    const questionComment = await this.prisma.comment.findUnique({
+      where: {
+        id,
+      },
+    })
+
+    if (!questionComment) return null
+
+    return PrismaQuestionCommentMapper.toDomain(questionComment)
   }
 
-  findManyByTopicId(
+  async findManyByTopicId(
     questionId: string,
     params: PaginationParams,
   ): Promise<QuestionComment[]> {
-    throw new Error('Method not implemented.')
+    const quantity = 10
+
+    const questionsByTopicId = await this.prisma.comment.findMany({
+      where: {
+        questionId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: quantity,
+      skip: (params.page - 1) * 10,
+    })
+
+    return questionsByTopicId.map(PrismaQuestionCommentMapper.toDomain)
   }
 
-  create(questionComment: QuestionComment): Promise<void> {
-    throw new Error('Method not implemented.')
+  async create(questionComment: QuestionComment): Promise<void> {
+    const prismaQuestionComment =
+      PrismaQuestionCommentMapper.toPrisma(questionComment)
+
+    await this.prisma.comment.create({
+      data: prismaQuestionComment,
+    })
   }
 
-  delete(questionComment: QuestionComment): Promise<void> {
-    throw new Error('Method not implemented.')
+  async delete(questionComment: QuestionComment): Promise<void> {
+    await this.prisma.comment.delete({
+      where: {
+        id: questionComment.id.toString(),
+      },
+    })
   }
 }

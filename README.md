@@ -702,4 +702,6 @@ model Attachment {
 
 - As camadas da aplicação são componentes separados um dos outros.
 - Não necessariamente uma classe/entidade da camada do domínio representa uma tabela no banco de dados.
- 
+- 414 -> Implementando Repositorios
+
+## Implementando repositórios
