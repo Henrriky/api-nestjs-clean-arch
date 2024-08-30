@@ -20,3 +20,20 @@ export function makeQuestionAttachment(
 
   return questionattachment
 }
+
+// @Injectable()
+// export class AnswerAttachmentFactory {
+//   constructor(private prisma: PrismaService) {}
+
+//   async makePrismaAnswerAttachment(
+//     data: Partial<AnswerAttachmentProps> = {},
+//   ): Promise<AnswerAttachment> {
+//     const answerAttachment = makeAnswerAttachment(data)
+
+//     await this.prisma.comment.create({
+//       data: PrismaAnswerAttachmentMapper.toPrisma(answerAttachment),
+//     })
+
+//     return answerAttachment
+//   }
+// }
