@@ -709,3 +709,158 @@ model Attachment {
 ## Utilizando Factories nos Testes E2E
 
 ## Refatorando E2E
+
+## Criando os controllers
+
+### Controladores de Pergunta
+
+#### Editar pergunta
+
+#### Deletar pergunta
+
+#### Responder pergunta
+
+#### Editar resposta da pergunta
+
+#### Deletar resposta da pergunta
+
+#### Buscar respostas de uma pergunta
+
+- Buscar também o autor da resposta através do id.
+- Criar um Presenter sem o autor, posteriormente essa informação deverá ser buscada.
+
+#### Escolher melhor resposta
+
+#### Comentar na pergunta
+
+#### Deletar Comentário da pergunta
+
+### Controllers de Resposta
+
+- [x] Comentar na resposta
+- [X] Deletar comentário da resposta
+- [X] Listar comentários de uma pergunta
+- [X] Listar comentários de uma resposta
+
+### Controller de Upload de Arquivo
+
+- Rota de Upload de Arquivos -> Retorna o ID do Arquivo que foi realizado o Upload -> Envia o ID do Arquivo que foi realizado o Upload
+- Sempre separar a lógica de Upload de arquivos, pois o envio dele através do json em base64 pode sobrecarregar o payload enviado para a API.
+- [ ] Controller de realizar o upload de anexos
+  - Utilizar o `pnpm install @types/multer`
+  - Adicionar um `@UseInterceptors()` e `@FileInterceptor('file')`
+  ```ts
+    @Controller('/attachments')
+    export class UploadAttachmentsController {
+      @Post()
+      @HttpCode(201)
+      @UseInterceptors(FileInterceptor('file'))
+      async handle(
+        @UploadedFile(
+          new ParseFilePipe({
+            validators: [
+              new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 2 }), // 2 MB
+              new FileTypeValidator({ fileType: '.(png|jpg|jpeg|pdf)' }),
+            ],
+          }),
+        )
+        file: Express.Multer.File,
+      ) {
+      }
+    }
+  ```
+  - `http --form POST localhost:3333/attachments file@profile.png`
+
+#### Use case de Upload de Arquivo
+
+- Formas de Upload de arquivo: Buffer, Base64, Stream, Arquivo temporário entre outros
+- [X] Use case UploadAndCreateAttachment
+  - [X] Receber o Buffer do arquivo em memória HEAP
+    - Alternativa é o recebimento de uma Stream, que o multer também suporta `internal.Readable`
+  - [X] Validação do tipo de arquivo para que seja enviado o tipo de arquivo para algum Storage Provider (AWS S3, Cloudflare R2)
+
+#### Testes unitários para o Use Case de Upload
+
+```ts
+import { expect, it, describe, beforeEach } from 'vitest'
+import { InMemoryAttachmentsRepository } from 'test/repositories/in-memory-attachments-repository'
+import { UploadAndCreateAttachmentUseCase } from './upload-and-create-attachment'
+import { FakeUploader } from 'test/storage/fake-uploader'
+import { InvalidAttachmentTypeError } from './errors/invalid-attachment-type'
+
+let inMemoryAttachmentsRepository: InMemoryAttachmentsRepository
+let fakeUploader: FakeUploader
+let usecase: UploadAndCreateAttachmentUseCase
+
+describe('Upload and Create Attachment', () => {
+  beforeEach(() => {
+    inMemoryAttachmentsRepository = new InMemoryAttachmentsRepository()
+    fakeUploader = new FakeUploader()
+    usecase = new UploadAndCreateAttachmentUseCase(
+      inMemoryAttachmentsRepository,
+      fakeUploader,
+    )
+  })
+
+  it('should be able to upload and create an attachment', async () => {
+    const result = await usecase.execute({
+      fileName: 'profile.png',
+      fileType: 'image/png',
+      body: Buffer.from(''),
+    })
+    expect(result.isSuccess()).toBe(true)
+    expect(result.value).toEqual({
+      attachment: inMemoryAttachmentsRepository.items[0],
+    })
+    expect(fakeUploader.uploads).toHaveLength(1)
+    expect(fakeUploader.uploads[0]).toEqual(
+      expect.objectContaining({
+        fileName: 'profile.png',
+      }),
+    )
+  })
+
+  it('should be able to upload an attachment with invalid file type', async () => {
+    const result = await usecase.execute({
+      fileName: 'profile.png',
+      fileType: 'audio/mpeg',
+      body: Buffer.from(''),
+    })
+    expect(result.isFailure()).toBe(true)
+    expect(result.value).toBeInstanceOf(InvalidAttachmentTypeError)
+  })
+})
+```
+
+#### Integração com Cloudflare R2
+
+- Existem vários Storage Providers que suportam o upload de arquivos através das aplicações. Alguns exemplos são: Amazon S3, Tebi S3, Cloudflare R2.
+  - Salvar nesses sistemas de armazenamento é mais barato que armazenar no disco da máquina
+  - Amazon obriga a colocar o cartão de crédito pra utilizar o serviço do S3 e cobra a taxa de egress (saída para internet)
+  - O Cloudflare R2 também é feito para o armazenamento de objetos e não cobra por taxa de egress. Além disso, ele tem suporte para API da Amazon S3.
+  - Criar conta -> R2 -> Criar um Bucket (Pasta do Projeto) -> Selecionar a região -> Criar
+    - Manage R2 API Tokens -> Create API Token -> Type API Token Name -> Define permissions -> Specify buckets -> Define TTL 
+      - Copy Access Key ID and Secret Access Key  
+      - Definir na variável de ambiente
+      ```env
+        AWS_SECRET_ACCESS_KEY="123123123123"
+        AWS_ACCESS_KEY_ID="123123123"
+        AWS_BUCKET_NAME="ASDADASD"
+        CLOUDFLARE_ACCOUNT_ID="asdasdasdasd"
+      ```
+      - Validar variáveis de ambiente
+- `pnpm install @aws-sdk/client-s3`
+- Criar `r2-storage.ts`
+- Nunca salvar a url no banco de dados, melhor salvar a referência para o id do arquivo que retorna a url, pois se o storage alterar a url também se altera.
+
+#### Criando testes para o Controller de criação de anexo
+
+- Não se deve "mockar" os dados quando estiver trabalhando com testes E2E. Por exemplo, na Cloudflare, os testes E2E vai de fato criar os dados lá, para que seja possível simular ao máximo o ambiente de produção.
+- Criar bucket dedicado para testes
+  - Adicionar lifecycle de deletar os objetos após um dia de criação.
+- Criar .env.test
+- Adicionar um bucket diferente para testes.
+config({ path: '.env', override: true })
+config({ path: '.env.test', override: true })
+
+- Sempre isolar os testes
