@@ -47,12 +47,12 @@ describe('Create Question (E2E)', () => {
 
     expect(response.statusCode).toBe(201)
 
-    const userOnDatabase = await prisma.question.findFirst({
+    const questionOnDatabase = await prisma.question.findFirst({
       where: {
         title: 'Title question',
       },
     })
 
-    expect(userOnDatabase).toBeTruthy()
+    expect(questionOnDatabase).toBeTruthy()
   })
 })

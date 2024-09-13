@@ -10,7 +10,7 @@ import {
 import { QuestionPresenter } from '../presenters/question-presenter'
 
 @Controller('/questions/:slug')
-export class GetQuestionBySluController {
+export class GetQuestionBySlugController {
   constructor(private readonly getQuestionBySlug: GetQuestionBySlugUseCase) {}
 
   @Get()
