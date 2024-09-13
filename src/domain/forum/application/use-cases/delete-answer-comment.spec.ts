@@ -8,7 +8,7 @@ import { ResourceNotFoundError } from '@/core/error/resource-not-found-error'
 let inMemoryAnswerCommentRepository: InMemoryAnswerCommentsRepository
 let usecase: DeleteAnswerCommentUseCase
 
-describe('Delete AnswerComment', () => {
+describe('Delete Answer Comment', () => {
   beforeEach(() => {
     inMemoryAnswerCommentRepository = new InMemoryAnswerCommentsRepository()
     usecase = new DeleteAnswerCommentUseCase(inMemoryAnswerCommentRepository)
