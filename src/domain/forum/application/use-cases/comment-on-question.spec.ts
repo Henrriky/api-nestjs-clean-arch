@@ -2,14 +2,14 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { InMemoryQuestionsRepository } from 'test/repositories/in-memory-questions-repository'
 import { makeQuestion } from 'test/factories/make-question'
 import { InMemoryQuestionCommentsRepository } from 'test/repositories/in-memory-question-comments-repository'
-import { CommentOnQuestionCase } from './comment-on-question'
 import { ResourceNotFoundError } from '@/core/error/resource-not-found-error'
 import { InMemoryQuestionAttachmentsRepository } from 'test/repositories/in-memory-question-attachments-repository'
+import { CommentOnQuestionUseCase } from './comment-on-question'
 
 let inMemoryQuestionCommentsRepository: InMemoryQuestionCommentsRepository
 let inMemoryQuestionRepository: InMemoryQuestionsRepository
 let inMemoryQuestionAttachmentsRepository: InMemoryQuestionAttachmentsRepository
-let usecase: CommentOnQuestionCase
+let usecase: CommentOnQuestionUseCase
 
 describe('Comment On Question', () => {
   beforeEach(() => {
@@ -20,7 +20,7 @@ describe('Comment On Question', () => {
     inMemoryQuestionRepository = new InMemoryQuestionsRepository(
       inMemoryQuestionAttachmentsRepository,
     )
-    usecase = new CommentOnQuestionCase(
+    usecase = new CommentOnQuestionUseCase(
       inMemoryQuestionRepository,
       inMemoryQuestionCommentsRepository,
     )
