@@ -9,7 +9,7 @@ let inMemoryStudentsRepository: InMemoryStudentsRepository
 let fakeHashGenerator: FakeHasher
 let usecase: RegisterStudentUseCase
 
-describe('Create Question', () => {
+describe('Register Student', () => {
   beforeEach(() => {
     inMemoryStudentsRepository = new InMemoryStudentsRepository()
     fakeHashGenerator = new FakeHasher()
