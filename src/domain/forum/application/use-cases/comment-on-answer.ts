@@ -4,21 +4,23 @@ import { AnswerCommentsRepository } from '../repositories/answer-comments-reposi
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ResourceNotFoundError } from '@/core/error/resource-not-found-error'
 import { Either, failure, success } from '@/core/either'
+import { Injectable } from '@nestjs/common'
 
-interface CommentOnAnswerCaseInput {
+interface CommentOnAnswerUseCaseInput {
   answerId: string
   authorId: string
   content: string
 }
 
-type CommentOnAnswerCaseOutput = Either<
+type CommentOnAnswerUseCaseOutput = Either<
   ResourceNotFoundError,
   {
     answerComment: AnswerComment
   }
 >
 
-export class CommentOnAnswerCase {
+@Injectable()
+export class CommentOnAnswerUseCase {
   constructor(
     private answersRepository: AnswersRepository,
     private answerCommentsRepository: AnswerCommentsRepository,
@@ -28,7 +30,7 @@ export class CommentOnAnswerCase {
     authorId,
     answerId,
     content,
-  }: CommentOnAnswerCaseInput): Promise<CommentOnAnswerCaseOutput> {
+  }: CommentOnAnswerUseCaseInput): Promise<CommentOnAnswerUseCaseOutput> {
     const answer = await this.answersRepository.findById(answerId)
 
     if (!answer) {
