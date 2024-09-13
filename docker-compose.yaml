@@ -13,3 +13,8 @@ services:
       PGDATA: /data/postgres
     volumes:
       - ./data/pg:/data/postgres
+    networks:
+      - network-nestjs-clean-arch
+networks:
+  network-nestjs-clean-arch:
+    driver: bridge
