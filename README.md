@@ -864,3 +864,52 @@ config({ path: '.env', override: true })
 config({ path: '.env.test', override: true })
 
 - Sempre isolar os testes
+
+## Refatorando controllers
+
+### Perguntas com anexos
+
+- Em nenhum momento o `QuestionRepositoryPrisma#create` está criando os Attachments no banco de dados.
+  - Esses dados estão salvos apenas no modelo de domínio, que foi extraido apenas os atributos da entidade no Mapper.
+- Agreagado: Conjunto de entidades que caminham juntas
+  - Uma Question tem vários Attachments
+  - Question (AggregateRoot) e Attachments está dentro do agregado.
+  - Quando vamos salvar o `AggregateRoot` é importante que as informações como lista de anexos sejam salvas junto ao salvamento da `Question` no banco de dados.
+  - Vamos criar dois métodos no `QuestionAttachmentsRepository` que é create e delete. Esses métodos vão atualizar a coluna questionId, pois estamos pressupondo que os attachments que estão sendo enviados para esse método já foram adicionados na tabela, e agora só basta relacionar eles com o questionId.
+- Ao trabalhar com arquitetura em camadas, sempre temos que pensar que não necessariamente as ações fazem um mapeamento de 1 para 1 entre camadas de domínio e camada de infra/persistência. Pode ser que estamos criando uma informação na camada de domínio e quatro registros em tabelas do banco de dados.
+- Nesse caso um Repositorio do AggregateRoot chama o repositorio dos agregados filhos:
+```ts
+  async create(question: Question) {
+    this.items.push(question)
+
+    await this.questionAttachmentsRepository.createMany(
+      question.attachments.getItems(),
+    )
+
+    DomainEvents.dispatchEventsForAggregate(question.id)
+  }
+
+  async save(question: Question) {
+    const itemIndex = this.items.findIndex((item) => item.id === question.id)
+
+    this.items[itemIndex] = question
+
+    await this.questionAttachmentsRepository.createMany(
+      question.attachments.getNewItems(),
+    )
+
+    await this.questionAttachmentsRepository.deleteMany(
+      question.attachments.getRemovedItems(),
+    )
+
+    DomainEvents.dispatchEventsForAggregate(question.id)
+  }
+```
+
+### Persistindo anexos no banco do prisma
+
+- O correto era criar os anexos apenas se a questão for criada, através de transactions. No entanto, o prisma possui uma limitação nas transactions, que você não pode executar uma transaction que englobe mais de um arquivo. 
+
+### Criando perguntas com anexos
+
+- Criar previamente os anexos para realizar os testes E2E
