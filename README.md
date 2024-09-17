@@ -913,3 +913,26 @@ config({ path: '.env.test', override: true })
 ### Criando perguntas com anexos
 
 - Criar previamente os anexos para realizar os testes E2E
+
+### Editando perguntas com anexos
+
+- Necessário criar anexos relacionados a pergunta que será editada
+- Enviar anexos que não estão no banco, forçando a inferência de que os novos foram criados e os antigos foram deletados.
+
+### Criando respostas com anexos
+
+- Criação de `createMany` e `deleteMany` do `AnswerAttachment`
+
+### Editando respostas com anexos
+
+- Criação dos testes unitários para `edit-answer.ts`
+- Criação da camada de infra:
+  - [X] Alterar `PrismaAnswerRepository` e `PrismaAnswerAttachmentsRepository`
+    - [X] Criar para `PrismaAnswerAttachmentsRepository` os métodos `createMany` e `deleteMany`
+    - [X] Adicionar para `PrismaAnswerRepository` chamda para os métodos `createMany` e `deleteMany`
+  - [X] Receber anexos em `EditAsnwerQuestionController`
+  - [X] Receber anexos em `AnswerQuestionController`
+  - [X] Criar `AnswerAttachmentsFactory` para persistência no Prisma para os testes E2E
+  - [ ] Realizar testes para `AnswerQuestionController`
+  - [ ] Realizar testes para `EditAsnwerQuestionController`
+
