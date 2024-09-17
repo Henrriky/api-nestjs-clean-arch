@@ -17,6 +17,7 @@ import { UserPayload } from '@/infra/auth/jwt.strategy'
 const editQuestionBodySchema = z.object({
   title: z.string(),
   content: z.string(),
+  attachments: z.array(z.string().uuid()),
 })
 
 type EditQuestionBodySchema = z.infer<typeof editQuestionBodySchema>
@@ -33,13 +34,13 @@ export class EditQuestionController {
     body: EditQuestionBodySchema,
     @CurrentUser() user: UserPayload,
   ) {
-    const { title, content } = body
+    const { title, content, attachments } = body
 
     const result = await this.editQuestion.execute({
       title,
       content,
       authorId: user.sub,
-      attachmentsIds: [],
+      attachmentsIds: attachments,
       questionId,
     })
 
