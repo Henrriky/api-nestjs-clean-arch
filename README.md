@@ -1075,5 +1075,19 @@ export class PrismaCommentWithAuthorMapper {
 
 - Para realizar as mudanças necessárias no nosso Controller, vamos precisar criar um novo presenter chamado de `CommentWithAuthorPresenter`
 
+### Comentário da resposta com autor
+
+- [X] Refatorar caso de uso `FetchAnswerComments`
+- [X] Criar contrato em `AnswerCommentsRepository`
+- [X] Implementar contrato em `InMemoryAnswerCommentsRepository`
+- [X] Refatorar teste unitário `FetchAnswerComments`
+- [X] Implementar contrato em `PrismaAnswerCommentsRepository`
+  - Incluir autor na query
+  - Utilizar PrismaCommentWithAuthorMapper
+- [X] Refatorar Controller `FetchAnswerCommentsController`
+  - Utilizar `CommentWithAuthorPresenter`
+- [X] Refatorar teste unitário `FetchAnswerCommentsController`
+
+
 
 
