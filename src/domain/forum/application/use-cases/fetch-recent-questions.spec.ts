@@ -3,17 +3,25 @@ import { InMemoryQuestionsRepository } from 'test/repositories/in-memory-questio
 import { FetchRecentQuestionsUseCase } from './fetch-recent-questions'
 import { makeQuestion } from 'test/factories/make-question'
 import { InMemoryQuestionAttachmentsRepository } from 'test/repositories/in-memory-question-attachments-repository'
+import { InMemoryStudentsRepository } from 'test/repositories/in-memory-student-repository'
+import { InMemoryAttachmentsRepository } from 'test/repositories/in-memory-attachments-repository'
 
+let inMemoryStudentsRepository: InMemoryStudentsRepository
+let inMemoryAttachmentsRepository: InMemoryAttachmentsRepository
 let inMemoryQuestionRepository: InMemoryQuestionsRepository
 let inMemoryQuestionAttachmentsRepository: InMemoryQuestionAttachmentsRepository
 let usecase: FetchRecentQuestionsUseCase
 
 describe('Fetch Recent Questions', () => {
   beforeEach(() => {
+    inMemoryStudentsRepository = new InMemoryStudentsRepository()
+    inMemoryAttachmentsRepository = new InMemoryAttachmentsRepository()
     inMemoryQuestionAttachmentsRepository =
       new InMemoryQuestionAttachmentsRepository()
     inMemoryQuestionRepository = new InMemoryQuestionsRepository(
       inMemoryQuestionAttachmentsRepository,
+      inMemoryStudentsRepository,
+      inMemoryAttachmentsRepository,
     )
     usecase = new FetchRecentQuestionsUseCase(inMemoryQuestionRepository)
   })

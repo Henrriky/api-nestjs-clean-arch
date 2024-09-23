@@ -8,7 +8,7 @@ import { PrismaService } from '@/infra/database/prisma/prisma.service'
 import { faker } from '@faker-js/faker'
 import { Injectable } from '@nestjs/common'
 
-function makeAttachment(
+export function makeAttachment(
   override: Partial<AttachmentProps> = {},
   id?: UniqueEntityID,
 ) {

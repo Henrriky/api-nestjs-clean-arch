@@ -1088,6 +1088,14 @@ export class PrismaCommentWithAuthorMapper {
   - Utilizar `CommentWithAuthorPresenter`
 - [X] Refatorar teste unitário `FetchAnswerCommentsController`
 
+### Value objects detalhes da pergunta (Question)
+
+### Prisma e Controller detalhe da pergunta
+
+
+
+
+
 
 
 

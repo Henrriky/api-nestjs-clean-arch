@@ -13,9 +13,14 @@ import { InMemoryNotificationRepository } from 'test/repositories/in-memory-noti
 import { makeQuestion } from 'test/factories/make-question'
 import { MockInstance } from 'vitest'
 import { waitFor } from 'test/utils/wait-for'
+import { InMemoryAttachmentsRepository } from 'test/repositories/in-memory-attachments-repository'
+import { InMemoryStudentsRepository } from 'test/repositories/in-memory-student-repository'
 
 let inMemoryQuestionAttachmentsRepository: InMemoryQuestionAttachmentsRepository
 let inMemoryQuestionsRepository: InMemoryQuestionsRepository
+
+let inMemoryStudentsRepository: InMemoryStudentsRepository
+let inMemoryAttachmentsRepository: InMemoryAttachmentsRepository
 
 let inMemoryAnswerAttachmentsRepository: InMemoryAnswerAttachmentsRepository
 let inMemoryAnswersRepository: InMemoryAnswersRepository
@@ -23,6 +28,7 @@ let inMemoryAnswersRepository: InMemoryAnswersRepository
 let inMemoryNotificationsRepository: InMemoryNotificationRepository
 let sendNotificationUseCase: SendNotificationUseCase
 
+// @ts-ignore
 let sendNotificationExecuteSpy: MockInstance<
   [SendNotificationUseCaseInput],
   Promise<SendNotificationUseCaseOutput>
@@ -30,12 +36,15 @@ let sendNotificationExecuteSpy: MockInstance<
 
 describe('On Question Best answer Chosen', () => {
   beforeEach(() => {
+    inMemoryStudentsRepository = new InMemoryStudentsRepository()
+    inMemoryAttachmentsRepository = new InMemoryAttachmentsRepository()
     inMemoryQuestionAttachmentsRepository =
       new InMemoryQuestionAttachmentsRepository()
     inMemoryQuestionsRepository = new InMemoryQuestionsRepository(
       inMemoryQuestionAttachmentsRepository,
+      inMemoryStudentsRepository,
+      inMemoryAttachmentsRepository,
     )
-
     inMemoryAnswerAttachmentsRepository =
       new InMemoryAnswerAttachmentsRepository()
     inMemoryAnswersRepository = new InMemoryAnswersRepository(

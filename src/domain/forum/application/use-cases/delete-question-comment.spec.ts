@@ -4,13 +4,18 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { makeQuestionComment } from 'test/factories/make-question-comment'
 import { ResourceNotFoundError } from '@/core/error/resource-not-found-error'
 import { NotAllowedError } from '@/core/error/not-allowed-error'
+import { InMemoryStudentsRepository } from 'test/repositories/in-memory-student-repository'
 
+let inMemoryStudentsRepository: InMemoryStudentsRepository
 let inMemoryQuestionCommentRepository: InMemoryQuestionCommentsRepository
 let usecase: DeleteQuestionCommentUseCase
 
 describe('Delete Question Comment', () => {
   beforeEach(() => {
-    inMemoryQuestionCommentRepository = new InMemoryQuestionCommentsRepository()
+    inMemoryStudentsRepository = new InMemoryStudentsRepository()
+    inMemoryQuestionCommentRepository = new InMemoryQuestionCommentsRepository(
+      inMemoryStudentsRepository,
+    )
     usecase = new DeleteQuestionCommentUseCase(
       inMemoryQuestionCommentRepository,
     )

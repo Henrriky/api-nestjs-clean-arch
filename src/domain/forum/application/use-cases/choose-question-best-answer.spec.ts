@@ -8,7 +8,11 @@ import { ResourceNotFoundError } from '@/core/error/resource-not-found-error'
 import { NotAllowedError } from '@/core/error/not-allowed-error'
 import { InMemoryQuestionAttachmentsRepository } from 'test/repositories/in-memory-question-attachments-repository'
 import { InMemoryAnswerAttachmentsRepository } from 'test/repositories/in-memory-answer-attachments-repository'
+import { InMemoryStudentsRepository } from 'test/repositories/in-memory-student-repository'
+import { InMemoryAttachmentsRepository } from 'test/repositories/in-memory-attachments-repository'
 
+let inMemoryStudentsRepository: InMemoryStudentsRepository
+let inMemoryAttachmentsRepository: InMemoryAttachmentsRepository
 let inMemoryAnswerAttachmentsRepository: InMemoryAnswerAttachmentsRepository
 let inMemoryAnswerRepository: InMemoryAnswersRepository
 let inMemoryQuestionAttachmentsRepository: InMemoryQuestionAttachmentsRepository
@@ -18,6 +22,9 @@ let usecase: ChooseQuestionBestAnswerUseCase
 
 describe('Choose Question Best Answer', () => {
   beforeEach(() => {
+    inMemoryStudentsRepository = new InMemoryStudentsRepository()
+    inMemoryAttachmentsRepository = new InMemoryAttachmentsRepository()
+
     inMemoryAnswerAttachmentsRepository =
       new InMemoryAnswerAttachmentsRepository()
     inMemoryQuestionAttachmentsRepository =
@@ -27,6 +34,8 @@ describe('Choose Question Best Answer', () => {
     )
     inMemoryQuestionRepository = new InMemoryQuestionsRepository(
       inMemoryQuestionAttachmentsRepository,
+      inMemoryStudentsRepository,
+      inMemoryAttachmentsRepository,
     )
     usecase = new ChooseQuestionBestAnswerUseCase(
       inMemoryQuestionRepository,

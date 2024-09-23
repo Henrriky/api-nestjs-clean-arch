@@ -5,17 +5,22 @@ import { InMemoryAnswerCommentsRepository } from 'test/repositories/in-memory-an
 import { ResourceNotFoundError } from '@/core/error/resource-not-found-error'
 import { InMemoryAnswerAttachmentsRepository } from 'test/repositories/in-memory-answer-attachments-repository'
 import { CommentOnAnswerUseCase } from './comment-on-answer'
+import { InMemoryStudentsRepository } from 'test/repositories/in-memory-student-repository'
 
 let inMemoryAnswerAttachmentsRepository: InMemoryAnswerAttachmentsRepository
+let inMemoryStudentsRepository: InMemoryStudentsRepository
 let inMemoryAnswerCommentsRepository: InMemoryAnswerCommentsRepository
 let inMemoryAnswerRepository: InMemoryAnswersRepository
 let usecase: CommentOnAnswerUseCase
 
 describe('Comment On Answer', () => {
   beforeEach(() => {
+    inMemoryStudentsRepository = new InMemoryStudentsRepository()
     inMemoryAnswerAttachmentsRepository =
       new InMemoryAnswerAttachmentsRepository()
-    inMemoryAnswerCommentsRepository = new InMemoryAnswerCommentsRepository()
+    inMemoryAnswerCommentsRepository = new InMemoryAnswerCommentsRepository(
+      inMemoryStudentsRepository,
+    )
     inMemoryAnswerRepository = new InMemoryAnswersRepository(
       inMemoryAnswerAttachmentsRepository,
     )

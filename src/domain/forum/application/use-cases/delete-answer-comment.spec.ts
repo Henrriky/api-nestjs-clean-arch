@@ -4,13 +4,18 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { makeAnswerComment } from 'test/factories/make-answer-comment'
 import { NotAllowedError } from '@/core/error/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/error/resource-not-found-error'
+import { InMemoryStudentsRepository } from 'test/repositories/in-memory-student-repository'
 
+let inMemoryStudentsRepository: InMemoryStudentsRepository
 let inMemoryAnswerCommentRepository: InMemoryAnswerCommentsRepository
 let usecase: DeleteAnswerCommentUseCase
 
 describe('Delete Answer Comment', () => {
   beforeEach(() => {
-    inMemoryAnswerCommentRepository = new InMemoryAnswerCommentsRepository()
+    inMemoryStudentsRepository = new InMemoryStudentsRepository()
+    inMemoryAnswerCommentRepository = new InMemoryAnswerCommentsRepository(
+      inMemoryStudentsRepository,
+    )
     usecase = new DeleteAnswerCommentUseCase(inMemoryAnswerCommentRepository)
   })
 

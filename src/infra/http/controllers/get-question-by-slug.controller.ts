@@ -7,7 +7,7 @@ import {
   NotFoundException,
   Param,
 } from '@nestjs/common'
-import { QuestionPresenter } from '../presenters/question-presenter'
+import { QuestionDetailsPresenter } from '../presenters/question-details-presenter'
 
 @Controller('/questions/:slug')
 export class GetQuestionBySlugController {
@@ -31,7 +31,7 @@ export class GetQuestionBySlugController {
     const question = result.value.question
 
     return {
-      question: QuestionPresenter.toHTTP(question),
+      question: QuestionDetailsPresenter.toHTTP(question),
     }
   }
 }

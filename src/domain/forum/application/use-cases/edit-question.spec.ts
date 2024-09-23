@@ -6,17 +6,25 @@ import { NotAllowedError } from '@/core/error/not-allowed-error'
 import { ResourceNotFoundError } from '@/core/error/resource-not-found-error'
 import { InMemoryQuestionAttachmentsRepository } from 'test/repositories/in-memory-question-attachments-repository'
 import { makeQuestionAttachment } from 'test/factories/make-question-attachment'
+import { InMemoryStudentsRepository } from 'test/repositories/in-memory-student-repository'
+import { InMemoryAttachmentsRepository } from 'test/repositories/in-memory-attachments-repository'
 
+let inMemoryStudentsRepository: InMemoryStudentsRepository
+let inMemoryAttachmentsRepository: InMemoryAttachmentsRepository
 let inMemoryQuestionRepository: InMemoryQuestionsRepository
 let inMemoryQuestionAttachmentsRepository: InMemoryQuestionAttachmentsRepository
 let usecase: EditQuestionUseCase
 
 describe('Edit Question', () => {
   beforeEach(() => {
+    inMemoryStudentsRepository = new InMemoryStudentsRepository()
+    inMemoryAttachmentsRepository = new InMemoryAttachmentsRepository()
     inMemoryQuestionAttachmentsRepository =
       new InMemoryQuestionAttachmentsRepository()
     inMemoryQuestionRepository = new InMemoryQuestionsRepository(
       inMemoryQuestionAttachmentsRepository,
+      inMemoryStudentsRepository,
+      inMemoryAttachmentsRepository,
     )
     usecase = new EditQuestionUseCase(
       inMemoryQuestionRepository,

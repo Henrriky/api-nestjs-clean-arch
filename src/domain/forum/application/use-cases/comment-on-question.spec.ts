@@ -5,7 +5,11 @@ import { InMemoryQuestionCommentsRepository } from 'test/repositories/in-memory-
 import { ResourceNotFoundError } from '@/core/error/resource-not-found-error'
 import { InMemoryQuestionAttachmentsRepository } from 'test/repositories/in-memory-question-attachments-repository'
 import { CommentOnQuestionUseCase } from './comment-on-question'
+import { InMemoryStudentsRepository } from 'test/repositories/in-memory-student-repository'
+import { InMemoryAttachmentsRepository } from 'test/repositories/in-memory-attachments-repository'
 
+let inMemoryStudentsRepository: InMemoryStudentsRepository
+let inMemoryAttachmentsRepository: InMemoryAttachmentsRepository
 let inMemoryQuestionCommentsRepository: InMemoryQuestionCommentsRepository
 let inMemoryQuestionRepository: InMemoryQuestionsRepository
 let inMemoryQuestionAttachmentsRepository: InMemoryQuestionAttachmentsRepository
@@ -13,12 +17,17 @@ let usecase: CommentOnQuestionUseCase
 
 describe('Comment On Question', () => {
   beforeEach(() => {
+    inMemoryStudentsRepository = new InMemoryStudentsRepository()
+    inMemoryAttachmentsRepository = new InMemoryAttachmentsRepository()
     inMemoryQuestionAttachmentsRepository =
       new InMemoryQuestionAttachmentsRepository()
-    inMemoryQuestionCommentsRepository =
-      new InMemoryQuestionCommentsRepository()
+    inMemoryQuestionCommentsRepository = new InMemoryQuestionCommentsRepository(
+      inMemoryStudentsRepository,
+    )
     inMemoryQuestionRepository = new InMemoryQuestionsRepository(
       inMemoryQuestionAttachmentsRepository,
+      inMemoryStudentsRepository,
+      inMemoryAttachmentsRepository,
     )
     usecase = new CommentOnQuestionUseCase(
       inMemoryQuestionRepository,
