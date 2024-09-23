@@ -933,6 +933,147 @@ config({ path: '.env.test', override: true })
   - [X] Receber anexos em `EditAsnwerQuestionController`
   - [X] Receber anexos em `AnswerQuestionController`
   - [X] Criar `AnswerAttachmentsFactory` para persistência no Prisma para os testes E2E
-  - [ ] Realizar testes para `AnswerQuestionController`
-  - [ ] Realizar testes para `EditAsnwerQuestionController`
+  - [X] Realizar testes para `AnswerQuestionController`
+  - [X] Realizar testes para `EditAsnwerQuestionController`
+
+### Dados relacionados a uma API Rest.
+
+- Ao listar as perguntas de um fórum, o front-end normalmente não vai precisar somente do id do autor, e sim do nome dele. No entanto, realizar outra requisição para buscar o nome do autor com o id não é uma prática muito boa. Por isso, às vezes se torna necessário utilizar um Presenter que traz todos os dados em uma única requisição e que o front-end vai precisar.
+- Além disso, é recomendável sempre dividir uma requisição para um recurso (perguntas) e outra para uma grande quantidade de recursos associados, como respostas.
+- GraphQL: Diminui o desperdício e falta de dados, permitindo que o front-end faça solicitação do que apenas é necessário para construir, gerando menos dados e overhead na rede.
+- API Rest: Possui dois problemas, que são overfetching (muita informação) e underfetching (poucos dados)
+  - Maior payload -> Maior bytes -> Maior quantidade de dados trafegados -> Maior latência -> Maior tempo para realizar o parse do JSON.
+
+### Value Object comentário com Author
+
+- Agora queremos fazer rotas na aplicação que não retornam dados apenas de uma entidade, assim como nossos repositorios estavam fazendo, e sim de várias entidades juntas.
+- Ou seja, vamos retorna estrutura de dados que são compostas de outras estruturas de dados.
+- Entidade da camada de domínio: tudo que consiguimos idenficar de forma individual através de algum identificador.
+- Logo, se vamos retornar uma informação de `Answer` com `Author`, nós não vamos ter uma entidade e sim um aglomerado de informações.
+- Para representar esses aglomerados, vamos utilizar os `Value Objects`, que são classes que a gente identifica a individualidade da classe através do valor dos seus atributos. Se queremos listar perguntas com o autor, precisamos representar isso através de `Value Objects`
+
+```ts
+import { ValueObject } from '@/core/entities/value-object'
+
+export interface CommentWithAuthorProps {
+  commentId: string
+  content: string
+  author: string
+  authorId: string
+  createdAt: Date
+  updatedAt?: Date | null
+}
+
+export class CommentWithAuthor extends ValueObject<CommentWithAuthorProps> {
+  get commentId() {
+    return this.props.commentId
+  }
+
+  get content() {
+    return this.props.content
+  }
+
+  get author() {
+    return this.props.author
+  }
+
+  get authorId() {
+    return this.props.authorId
+  }
+
+  get createdAt() {
+    return this.props.createdAt
+  }
+
+  get updatedAt() {
+    return this.props.updatedAt
+  }
+
+  static create(props: CommentWithAuthorProps) {
+    return new CommentWithAuthor(props)
+  }
+}
+```
+- [X] Alterar `fetch-question-comments` para retornar o `Value Object`: `CommentWithAuthorProps`
+
+### Listando comentário com Autor
+
+- Modificar o `QuestionCommentsRepository`
+```ts
+  abstract findManyByQuestionIdWithAuthor(
+    questionId: string,
+    params: PaginationParams,
+  ): Promise<CommentWithAuthor[]>
+```
+- Quando estivermos lidando com InMemoryRepository, toda dependência será um repositorio em memoria também.
+- Receber o inMemoryStudentsRepository como dependência e utilizar diretamente os items para evitar a criação de varios metodos
+```ts
+
+  async findManyByTopicIdWithAuthor(
+    questionId: string,
+    params: PaginationParams,
+  ): Promise<CommentWithAuthor[]> {
+    params.page = Math.max(1, params.page)
+    const limit = 10
+    const previousOffset = (params.page - 1) * limit
+    const finalOffset = params.page * limit
+
+    const questionComments = this.items
+      .filter((item) => item.questionId.toString() === questionId)
+      .slice(previousOffset, finalOffset)
+      .map((comment) => {
+        const author = this.studentsRepository.items.find((student) => {
+          return student.id.equals(comment.authorId)
+        })
+
+        if (!author) {
+          throw new Error(
+            `Author with ID "${comment.authorId.toString()}" does not exist.`,
+          )
+        }
+        return CommentWithAuthor.create({
+          commentId: comment.id,
+          author: author.name,
+          authorId: comment.authorId,
+          content: comment.content,
+          updatedAt: comment.updatedAt,
+          createdAt: comment.createdAt,
+        })
+      })
+
+    return questionComments
+  }
+```
+
+### Prisma com comentario do autor
+
+- Para realizar a implementação do método do prisma, será necessário a criação de um Mapper para CommentWithAuthor
+```ts
+import { Comment as PrismaComment, User as PrismaUser } from '@prisma/client'
+import { CommentWithAuthor } from '@/domain/forum/enterprise/entities/value-objects/comment-with-author'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+
+type PrismaCommentWithAuthor = PrismaComment & {
+  author: PrismaUser
+}
+
+export class PrismaCommentWithAuthorMapper {
+  static toDomain(raw: PrismaCommentWithAuthor): CommentWithAuthor {
+    return CommentWithAuthor.create({
+      commentId: new UniqueEntityID(raw.id),
+      authorId: new UniqueEntityID(raw.authorId),
+      author: raw.author.name,
+      content: raw.content,
+      updatedAt: raw.updatedAt,
+      createdAt: raw.createdAt,
+    })
+  }
+}
+```
+
+### Controller comentario com Autor
+
+- Para realizar as mudanças necessárias no nosso Controller, vamos precisar criar um novo presenter chamado de `CommentWithAuthorPresenter`
+
+
 
