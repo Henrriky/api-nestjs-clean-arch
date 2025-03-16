@@ -697,6 +697,7 @@ model Attachment {
   @@map("attachments")
 }
 ```
+
 ## Criando Mappers do Prisma
 
 
@@ -1092,10 +1093,50 @@ export class PrismaCommentWithAuthorMapper {
 
 ### Prisma e Controller detalhe da pergunta
 
+### Eventos de Domínio e Cache
 
+#### Eventos de Domínio
 
+##### Registrando os eventos de domínio
 
+- Como a parte da comunicação entre os domínio através de `Domain Events` é especifica da camada mais interna da aplicação, podemos criar uma pasta `events` e dentro dela vamos criar um módulo `event.module.ts`
+  - Esse módulo vai utilizar `OnAnswerCreated` e `OnQuestionBestAnswerChoosen` e `SendNotificationUseCase`.
+  - Para permitir que o módulo seja iniciado, é necessário definir o nosso `NotificationRepository`
+  - Criar model:
+    ```prisma
+      model Notification {
+        id          String    @id @default(uuid())
+        title       String
+        content     String
+        readAt      DateTime? @map("read_at")
+        recipientId String    @map("recipient_id")
+        createdAt   DateTime  @default(now()) @map("created_at")
 
+        recipient User @relation(fields: [recipientId], references: [id])
 
+        @@map("notifications")
+      }
+    ```
+  - `pnpm prisma migrate dev`
+  - Criar o Mapper de Notification
 
+##### Testes E2E de Eventos de Domínio
 
+- https://www.eduardopires.net.br/2016/03/ddd-bounded-context/
+- https://martinfowler.com/bliki/BoundedContext.html
+- http://www.fabriciorissetto.com/blog/ddd-bounded-context/
+- https://mehmetozkaya.medium.com/domain-events-in-ddd-and-domain-vs-integration-events-in-microservices-architecture-c8d92787de86
+- https://microservices.io/patterns/data/domain-event.html
+- https://microservices.io/index.html
+- https://martinfowler.com/bliki/DDD_Aggregate.html
+- https://medium.com/unil-ci-software-engineering/consistency-boundary-aggregate-eventual-use-case-d993aa829377
+- https://www.cosmicpython.com/book/chapter_07_aggregate.html
+- https://medium.com/@dangeabunea/integrating-bounded-context-for-ddd-beginners-63c21af875fb
+- https://stackoverflow.com/questions/16713041/communicating-between-two-bounded-contexts-in-ddd
+- https://medium.com/ssense-tech/ddd-beyond-the-basics-mastering-multi-bounded-context-integration-ca0c7cec6561
+- https://www.thereformedprogrammer.net/evolving-modular-monoliths-3-passing-data-between-bounded-contexts/
+- https://www.oreilly.com/library/view/learning-domain-driven-design/9781098100124/ch04.html
+- https://ddd-practitioners.com/home/glossary/bounded-context/bounded-context-relationship/
+- https://www.linkedin.com/pulse/managing-relationships-between-bounded-contexts-ddd-aseman-arabsorkhi-zzkbf/
+
+#### Cache

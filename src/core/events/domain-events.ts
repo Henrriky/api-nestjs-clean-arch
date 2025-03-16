@@ -15,6 +15,8 @@ export class DomainEvents {
    */
   private static markedAggregates: AggregateRoot<unknown>[] = []
 
+  public static shouldRun = true
+
   /**
    * Dispara os eventos (Normalmente será chamado pelo banco de dados que marca o evento como pronto)
    */
@@ -99,6 +101,10 @@ export class DomainEvents {
     const eventClassName: string = event.constructor.name
 
     const isEventRegistered = eventClassName in this.handlersMap
+
+    if (!this.shouldRun) {
+      return
+    }
 
     if (isEventRegistered) {
       const handlers = this.handlersMap[eventClassName]
