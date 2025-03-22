@@ -41,6 +41,8 @@ import { UploadAttachmentsController } from './controllers/upload-attachments.co
 import { StorageModule } from '../storage/storage.module'
 import { EnvModule } from '../env/env.module'
 import { UploadAndCreateAttachmentUseCase } from '@/domain/forum/application/use-cases/upload-and-create-attachment'
+import { ReadNotificationController } from './controllers/read-notification.controller'
+import { ReadNotificationUseCase } from '@/domain/notification/application/use-cases/read-notification'
 
 @Module({
   imports: [DatabaseModule, CryptographyModule, StorageModule, EnvModule], // IMPORTS PERMITE ACESSO DE TODOS OS SERVICES EXPORTADOS PELO MODULO SEM PRECISAR ESPECIFICAR NO PROVIDERS DO ATUAL.
@@ -64,6 +66,7 @@ import { UploadAndCreateAttachmentUseCase } from '@/domain/forum/application/use
     FetchQuestionCommentsController,
     FetchAnswerCommentsController,
     UploadAttachmentsController,
+    ReadNotificationController,
   ],
   providers: [
     RegisterStudentUseCase,
@@ -85,6 +88,7 @@ import { UploadAndCreateAttachmentUseCase } from '@/domain/forum/application/use
     FetchQuestionCommentsUseCase,
     FetchAnswerCommentsUseCase,
     UploadAndCreateAttachmentUseCase,
+    ReadNotificationUseCase,
   ],
 })
 export class HttpModule {}
