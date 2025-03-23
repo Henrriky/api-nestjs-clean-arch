@@ -1139,7 +1139,146 @@ export class PrismaCommentWithAuthorMapper {
 - https://ddd-practitioners.com/home/glossary/bounded-context/bounded-context-relationship/
 - https://www.linkedin.com/pulse/managing-relationships-between-bounded-contexts-ddd-aseman-arabsorkhi-zzkbf/
 
-#### Cache
+#### Controllers
 
 ##### Controller: Read Notification
 
+#### Cache
+
+##### Criando repositório em Cache
+
+- Cache é algo difícil em larga escala, pois quando trabalhamos com agregados, que são entidades que atuam como um agrupador de outras entidades, temos uma dependência muito forte dessas outras entidades que dependem da principal. Então, se criarmos um cache para `Pergunta` junto com sua `Resposta, Usuário e Comentários`, quando um usuário atualizar uma `Resposta`, o nosso cache não seria mais válido, sendo necessário aplicar uma invalidação de cache.
+- A pergunta a se fazer na maioria das vezes é: Esse dado que estamos vendo atualmente, é algo que vai mudar constantemente?
+  - Caso a resposta seja sim, provavelmente a utilização de cache não seria viável.
+  - Caso a resposta seja não, provavelmente a utilização de cache é viável, uma vez que os dados que estiverem em cache serão alterados com pouca frequência.
+- Fluxo da primeira requisição: Usuário (Requisição) -> Controller -> Banco de Dados -> Controller -> Mecanismo de Cache -> Controller -> Usuário (Resposta)
+- Fluxo das próximas requisições: Usuário (Requisição) -> Controller -> Mecanismo de Cache -> Controller -> Usuário (Resposta).
+- Qual serviço utilizar? O ideal é utilizar tecnologias que são performáticas para leitura e escrita de dados não relacionados.
+- Serviços de cache conhecidos: Redis, Memcache, entre outros.
+- O serviço de cache faz parte da camada de infraestrutura da aplicação, não cabe à camada de domínio sequer saber que a aplicação realiza algum tipo de salvamento das informações. 
+- Normalmente o cache segue um padrão para realizar a busca de forma mais fácil
+  - Os dados são armazenados em chave valor:
+    - Chave: `<entity>:<identifier>:<information>`
+    - Valor: Dado em si
+  - Esse padrão permite que, ao trabalhar com mecanismos de cache como o `Redis`, os dados que estiverem associados após o identifier sejam deletados caso a gente delete tudo que vier antes.
+- Implementação do cache:
+  - Criação do arquivo `src/infra/cache/cache-repository.ts`:
+  
+##### Integrando Cache do Prisma
+
+- Para criar a lógica de cache, vamos inicialmente injetar a nossa interface nos repositórios associados aos dados que vamos salvar e implementar a lógica de cache:
+  ```ts
+  @Injectable()
+  export class PrismaQuestionsRepository implements QuestionsRepository {
+    constructor(
+      private readonly prisma: PrismaService,
+      private readonly cache: CacheRepository,
+      private readonly questionAttachmentsRepository: QuestionAttachmentsRepository,
+    ) {}
+
+    async findDetailsBySlug(slug: string): Promise<QuestionDetails | null> {
+      const cacheKey = `questions:${slug}:details`
+      const cacheHit = await this.cache.get(cacheKey)
+
+      if (cacheHit) {
+        const cachedData = JSON.parse(cacheHit)
+
+        return cachedData
+      }
+
+      const question = await this.prisma.question.findUnique({
+        where: { slug },
+        include: {
+          author: true,
+          attachments: true,
+        },
+      })
+
+      if (!question) return null
+
+      const questionDetails = PrismaQuestionDetailsMapper.toDomain(question)
+
+      this.cache.set(cacheKey, JSON.stringify(questionDetails))
+
+      return PrismaQuestionDetailsMapper.toDomain(question)
+    }
+
+    async save(question: Question): Promise<void> {
+      const prismaQuestion = PrismaQuestionMapper.toPrisma(question)
+
+      await Promise.all([
+        this.prisma.question.update({
+          where: {
+            id: prismaQuestion.id,
+          },
+          data: prismaQuestion,
+        }),
+        this.questionAttachmentsRepository.createMany(
+          question.attachments.getNewItems(),
+        ),
+        this.questionAttachmentsRepository.deleteMany(
+          question.attachments.getRemovedItems(),
+        ),
+        this.cache.delete(`question:${prismaQuestion.slug}:*`),
+      ])
+
+      DomainEvents.dispatchEventsForAggregate(question.id)
+    }
+  }
+
+  ```
+
+##### Criando Service do Redis
+
+- Atualmente existem duas bibliotecas para redis: `ioredis` e `redis`
+  - `ioredis`: Utiliza promises
+  - `redis`: Utiliza callbacks
+  - `npm install ioredis`
+- Agora basta realizarmos a lógica da classe `RedisService`, que é responsável pela conexão com o Redis e importar o `EnvService` no módulo `CacheModule`, para que seja possível utilizar ele.
+
+##### Implementando Cache do Redis
+
+- Criar container do Redis para desenvolvimento
+  - Utilizar as imagens da `bitnami/redis` para produção e `redis` para desenvolvimento
+  ```yaml
+  cache:
+  container_name: nest-clean-cache
+  image: redis
+  ports: 
+    - 6379:6379
+  volumes:
+    - ./data/redis:/data
+  ```
+- O Redis é um mecanismo de cache que possui vários tipos, sendo o mais comum a utilização dos seguintes métodos:
+  - `set, get, del`: Utilizado para armazenar tipos que são compostos por `Chave e Valor`
+  - `hset, hget, hdel`: Utilizado para armazenar tipos que são representados por um `HashSet`
+    - Composto por `set-key` e `set`
+  - `lset, lget, ldel`: Utilizado para armazenar tipos que são representados por uma `lista`
+- Implementar cache com o redis
+  ```ts
+  import { Injectable } from '@nestjs/common'
+  import { CacheRepository } from '../cache-repository'
+  import { RedisService } from './redis.service'
+  @Injectable()
+  export class RedisCacheRepository implements CacheRepository {
+    constructor(private redis: RedisService) {}
+
+    async set(key: string, value: string): Promise<void> {
+      await this.redis.set(key, value, 'EX', 60 * 15)
+    }
+
+    async get(key: string): Promise<string | null> {
+      return await this.redis.get(key)
+    }
+
+    async delete(key: string): Promise<void> {
+      await this.redis.del(key)
+    }
+  }
+  ```
+
+##### Testando persistência em cache.
+
+- O ideal para realizar o teste do cache é fazer um teste de integração exclusivamente para o repository, uma vez que o objetivo é testar ele.
+- Outro ponto importante é que **não devemos utilizar o mesmo banco de dados em memória de desenvolvimento para testes**. O ideal é aplicar uma estratégia semelhante aos testes do prisma, na onde cada um deles possuem uma instância dedicada do banco de dados.
+- Para fazermos isso com o Redis, será necessário alterar para cada teste um índice aleatório do banco de dados, já que o Redis trabalha com essa arquitetura para separar diferentes banco de dados.

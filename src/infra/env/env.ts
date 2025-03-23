@@ -9,6 +9,9 @@ export const envSchema = z.object({
   AWS_BUCKET_NAME: z.string(),
   CLOUDFLARE_ACCOUNT_ID: z.string(),
   PORT: z.coerce.number().optional().default(3333),
+  REDIS_HOST: z.coerce.string().optional().default('127.0.0.1'),
+  REDIS_PORT: z.coerce.number().optional().default(6379),
+  REDIS_DB: z.coerce.number().optional().default(0),
 })
 
 export type env = z.infer<typeof envSchema>

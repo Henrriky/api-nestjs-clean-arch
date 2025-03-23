@@ -17,7 +17,7 @@ export function makeQuestion(
     {
       authorId: new UniqueEntityID(),
       title: faker.lorem.sentence(),
-      slug: Slug.create('example-question'),
+      slug: Slug.create(faker.lorem.slug()),
       content: faker.lorem.text(),
       ...override,
     },
@@ -35,7 +35,6 @@ export class QuestionFactory {
     data: Partial<QuestionProps> = {},
   ): Promise<Question> {
     const question = makeQuestion(data)
-
     await this.prisma.question.create({
       data: PrismaQuestionMapper.toPrisma(question),
     })
